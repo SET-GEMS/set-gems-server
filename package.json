@@ -5,7 +5,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "cross-env NODE_ENV=development nodemon ./src/server.js"
+    "dev": "cross-env NODE_ENV=development nodemon ./src/server.js",
+    "simple-git-hooks": "simple-git-hooks",
+    "postinstall": "npm run simple-git-hooks",
+    "lint-staged": "lint-staged"
   },
   "repository": {
     "type": "git",
@@ -29,17 +32,14 @@
     "eslint": "^7.32.0",
     "husky": "^7.0.2",
     "lint-staged": "^11.1.2",
-    "nodemon": "^2.0.13"
+    "nodemon": "^2.0.13",
+    "simple-git-hooks": "^2.6.1"
   },
-  "husky": {
-    "hooks": {
-      "pre-push": "git branch | grep \"*\" | egrep -v \"^\\* main$\"",
-      "pre-commit": "lint-staged"
-    }
+  "simple-git-hooks": {
+    "pre-push": "git branch | grep \"*\" | egrep -v \"^\\* main$\"",
+    "pre-commit": "npm run lint-staged"
   },
   "lint-staged": {
-    "*.js": [
-      "eslint --fix"
-    ]
+    "*.js": "eslint --fix"
   }
 }
