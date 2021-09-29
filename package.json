@@ -1,0 +1,46 @@
+{
+  "name": "set-gems-server",
+  "version": "1.0.0",
+  "description": "SET GEMS Server Side",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SET-GEMS/set-gems-server.git"
+  },
+  "author": "JeongSeon Park",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SET-GEMS/set-gems-server/issues"
+  },
+  "homepage": "https://github.com/SET-GEMS/set-gems-server#readme",
+  "dependencies": {
+    "debug": "^2.6.9",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "http-errors": "^1.7.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "husky": "^7.0.2",
+    "lint-staged": "^11.1.2",
+    "nodemon": "^2.0.13"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "git branch | grep \"*\" | egrep -v \"^\\* main$\"",
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix"
+    ]
+  },
+  "engines": {
+    "node": "14.17.0"
+  }
+}
