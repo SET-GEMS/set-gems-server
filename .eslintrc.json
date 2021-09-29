@@ -31,6 +31,8 @@
     "no-var": "error",
     "object-curly-spacing": ["error", "always"],
     "semi": "error",
-    "comma-dangle": ["error", "always-multiline"]
+    "comma-dangle": ["error", "always-multiline"],
+    "quote-props": ["error", "as-needed"],
+    "quotes": ["error", "double"]
   }
 }
