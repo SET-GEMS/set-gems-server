@@ -7,7 +7,14 @@ const { ERROR } = require("../constants/messages");
 const { OK, BAD_REQUEST } = require("../constants/statusCodes");
 
 router.get("/", async function (req, res, next) {
+  try {
+    const ranking = await Ranking.find().sort({ time: 1 }).select("name time");
 
+    res.status(OK);
+    res.json({ ranking });
+  } catch(err) {
+    next(err);
+  }
 });
 
 router.post("/", async function (req, res, next) {
