@@ -1,11 +1,15 @@
 const app = require("./express/app");
 const http = require("http");
 
+const createWsServer = require("./socket");
+
 const port = process.env.PORT || "8000";
 
 app.set("port", port);
 
 const server = http.createServer(app);
+createWsServer(server);
+
 server.listen(port);
 server.on("error", handleServerError);
 server.on("listening", handleServerListen);
@@ -40,5 +44,3 @@ function handleServerListen() {
     : "port " + addr.port;
   console.log("Listening on " + bind);
 }
-
-module.exports = server;
