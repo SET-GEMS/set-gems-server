@@ -10,7 +10,7 @@ exports.handleDefaultError = function (
   err, req, res, next,
 ) {
   if (req.app.get("env") === "development") {
-    console.error(err);
+    console.error(err.message);
   }
 
   const message = (err.status !== INTERNAL_SERVER_ERROR)
