@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const { KNOCK, FULL_ROOM, JOIN_ROOM, NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START, SET_CARDS, SELECT_CARD, EXIT_ROOM, DISCONNECTING, NEW_LEADER, PLAYER_LEFT } = require("./constants/socketEvents");
+const { KNOCK, FULL_ROOM, JOIN_ROOM, NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START, SET_CARDS, SELECT_CARD, EXIT_ROOM, DISCONNECTING, NEW_LEADER, PLAYER_LEFT, NEW_SELECTOR, START_SELECT, COUNT_DOWN, COUNTDOWN, END_SELECT } = require("./constants/socketEvents");
 
 function createWsServer(httpServer) {
   const wsServer = new Server(httpServer, {
@@ -74,13 +74,35 @@ function createWsServer(httpServer) {
       done();
     });
 
+    let selectTimer = 0;
+
+    socket.on(START_SELECT, (roomName) => {
+      let count = 5;
+      const countTerm = 1000;
+
+      wsServer.to(roomName).emit(NEW_SELECTOR, socket.id, count);
+
+      selectTimer = setInterval(() => {
+        if (count === 0) {
+          return clearInterval(selectTimer);
+        }
+
+        count--;
+
+        wsServer.to(roomName).emit(COUNTDOWN, count);
+      }, countTerm);
+    });
+
+    socket.on(END_SELECT, (roomName) => {
+      wsServer.to(roomName).emit(END_SELECT);
+    });
+
     socket.on(SET_CARDS, (roomName, openedCards, remainingCards) => {
       socket.to(roomName).emit(SET_CARDS, openedCards, remainingCards);
     });
 
     socket.on(SELECT_CARD, (roomName, cardIndex) => {
-      socket.to(roomName).emit(SELECT_CARD, cardIndex);
-      socket.emit(SELECT_CARD, cardIndex);
+      wsServer.to(roomName).emit(SELECT_CARD, cardIndex);
     });
 
     socket.on(EXIT_ROOM, (roomName) => {
