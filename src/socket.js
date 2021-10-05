@@ -1,4 +1,5 @@
 const { Server } = require("socket.io");
+const { KNOCK, FULL_ROOM, JOIN_ROOM, NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START, SET_CARDS, SELECT_CARD, EXIT_ROOM, DISCONNECTING, NEW_LEADER, PLAYER_LEFT } = require("./constants/socketEvents");
 
 function createWsServer(httpServer) {
   const wsServer = new Server(httpServer, {
@@ -8,12 +9,12 @@ function createWsServer(httpServer) {
   });
 
   wsServer.on("connection", (socket) => {
-    socket.on("knock", (roomName, nickname, done) => {
+    socket.on(KNOCK, (roomName, nickname, done) => {
       const maxRoomMemberCounts = 4;
       const roomMemberIds = socket.adapter.rooms.get(roomName) || new Set();
 
       if (roomMemberIds.size === maxRoomMemberCounts) {
-        return socket.emit("full_room");
+        return socket.emit(FULL_ROOM);
       }
 
       socket.join(roomName);
@@ -29,7 +30,7 @@ function createWsServer(httpServer) {
       done(socket.nickname);
     });
 
-    socket.on("join_room", (roomName) => {
+    socket.on(JOIN_ROOM, (roomName) => {
       const roomMemberIds = socket.adapter.rooms.get(roomName);
       const roomMembers = roomMemberIds ? [...roomMemberIds]
         .filter((socketId) => socketId !== socket.id)
@@ -40,60 +41,73 @@ function createWsServer(httpServer) {
           return { id: socketId, nickname, isReady };
         }) : [];
 
-      const newPlayer = {
-        id: socket.id,
-        nickname: socket.nickname,
-        isReady: false,
-      };
+      if (roomMembers.length) {
+        const newPlayer = {
+          id: socket.id,
+          nickname: socket.nickname,
+          isReady: false,
+        };
 
-      socket.emit("joined", roomMembers);
-      socket.to(roomName).emit("new_player", newPlayer);
+        socket.to(roomName).emit(NEW_PLAYER, newPlayer);
+      } else {
+        socket.isLeader = true;
+      }
+
+      socket.emit(JOINED, roomMembers);
     });
 
-    socket.on("signal", (data, playerId) => {
-      socket.to(playerId).emit("signal", data, socket.id);
+    socket.on(SIGNAL, (data, playerId) => {
+      socket.to(playerId).emit(SIGNAL, data, socket.id);
     });
 
-    socket.on("chat", (roomName, message) => {
-      socket.to(roomName).emit("chat", `${socket.nickname}: ${message}`);
+    socket.on(CHAT, (roomName, message) => {
+      socket.to(roomName).emit(CHAT, `${socket.nickname}: ${message}`);
     });
 
-    socket.on("ready", (isReady, roomName) => {
+    socket.on(READY, (isReady, roomName) => {
       socket.isReady = isReady;
-      socket.to(roomName).emit("ready", isReady, socket.id);
+      socket.to(roomName).emit(READY, isReady, socket.id);
     });
 
-    socket.on("start", (roomName, done) => {
-      socket.to(roomName).emit("start");
+    socket.on(START, (roomName, done) => {
+      socket.to(roomName).emit(START);
       done();
     });
 
-    socket.on("set_cards", (roomName, openedCards, remainingCards) => {
-      socket.to(roomName).emit("set_cards", openedCards, remainingCards);
+    socket.on(SET_CARDS, (roomName, openedCards, remainingCards) => {
+      socket.to(roomName).emit(SET_CARDS, openedCards, remainingCards);
     });
 
-    socket.on("select_card", (roomName, cardIndex) => {
-      socket.to(roomName).emit("select_card", cardIndex);
-      socket.emit("select_card", cardIndex);
+    socket.on(SELECT_CARD, (roomName, cardIndex) => {
+      socket.to(roomName).emit(SELECT_CARD, cardIndex);
+      socket.emit(SELECT_CARD, cardIndex);
     });
 
-    socket.on("exit_room", (roomName) => {
-      socket.leave(roomName);
-      socket.nickname = "";
-      socket.isReady = false;
-
-      socket.to(roomName).emit("player_left", socket.id);
+    socket.on(EXIT_ROOM, (roomName) => {
+      handlePlayerLeft(roomName, socket);
     });
 
-    socket.on("disconnecting", () => {
+    socket.on(DISCONNECTING, () => {
       socket.rooms.forEach((roomName) => {
-        socket.to(roomName).emit("player_left", socket.id);
+        handlePlayerLeft(roomName, socket);
       });
     });
 
-    socket.on("error", (err) => {
-      console.error(err);
-    });
+    function handlePlayerLeft(roomName, socket) {
+      socket.leave(roomName);
+      socket.to(roomName).emit(PLAYER_LEFT, socket.id);
+
+      const roomMemberIds = socket.adapter.rooms.get(roomName);
+
+      if (socket.isLeader && roomMemberIds) {
+        const newLeaderId = [...roomMemberIds][0];
+        const newLeader = wsServer.sockets.sockets.get(newLeaderId);
+        newLeader.isReady = false;
+        newLeader.isLeader = true;
+
+        socket.to(roomName).emit(NEW_LEADER, newLeaderId);
+      }
+    }
   });
 }
 

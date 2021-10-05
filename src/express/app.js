@@ -8,7 +8,7 @@ const cors = require("cors");
 
 const ranking = require("./routes/ranking");
 const { handleNotFound, handleDefaultError } = require("./errorHandlers");
-const { OK } = require("./constants/statusCodes");
+const { OK } = require("../constants/statusCodes");
 
 const corsOptions = {
   origin: process.env.CLIENT_URL,
