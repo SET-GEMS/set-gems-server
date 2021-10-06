@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const { KNOCK, FULL_ROOM, JOIN_ROOM, NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START, SET_CARDS, SELECT_CARD, EXIT_ROOM, DISCONNECTING, NEW_LEADER, PLAYER_LEFT, NEW_SELECTOR, START_SELECT, COUNT_DOWN, COUNTDOWN, END_SELECT } = require("./constants/socketEvents");
+const { KNOCK, FULL_ROOM, JOIN_ROOM, NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START, SET_CARDS, SELECT_CARD, EXIT_ROOM, DISCONNECTING, NEW_LEADER, PLAYER_LEFT, NEW_SELECTOR, START_SELECT, COUNTDOWN, SELECT_SUCCESS, ALL_READY, GAME_OVER, LET_JOIN } = require("./constants/socketEvents");
 
 function createWsServer(httpServer) {
   const wsServer = new Server(httpServer, {
@@ -26,6 +26,7 @@ function createWsServer(httpServer) {
       }
 
       socket.isReady = false;
+      socket.point = 0;
 
       done(socket.nickname);
     });
@@ -36,9 +37,22 @@ function createWsServer(httpServer) {
         .filter((socketId) => socketId !== socket.id)
         .map((socketId) => {
           const memberSocket = wsServer.sockets.sockets.get(socketId);
-          const { nickname, isReady } = memberSocket;
+          const {
+            nickname,
+            point,
+            isReady,
+            isSelector,
+            isLeader,
+          } = memberSocket;
 
-          return { id: socketId, nickname, isReady };
+          return {
+            id: socketId,
+            nickname,
+            point,
+            isReady,
+            isSelector,
+            isLeader,
+          };
         }) : [];
 
       if (roomMembers.length) {
@@ -65,13 +79,29 @@ function createWsServer(httpServer) {
     });
 
     socket.on(READY, (isReady, roomName) => {
+      const roomMemberIds = socket.adapter.rooms.get(roomName);
+      const isAllReady = [...roomMemberIds].filter((id) => id !== socket.id)
+        .every((socketId) => {
+          const memberSocket = wsServer.sockets.sockets.get(socketId);
+          return memberSocket.isReady || memberSocket.isLeader;
+        });
+
       socket.isReady = isReady;
-      socket.to(roomName).emit(READY, isReady, socket.id);
+      wsServer.to(roomName).emit(READY, isReady, socket.id);
+
+      if (isAllReady) {
+        socket.to(roomName).emit(ALL_READY, isReady);
+      }
     });
 
-    socket.on(START, (roomName, done) => {
-      socket.to(roomName).emit(START);
-      done();
+    socket.on(START, (roomName) => {
+      const roomMemberIds = socket.adapter.rooms.get(roomName);
+      [...roomMemberIds].forEach((socketId) => {
+        const memberSocket = wsServer.sockets.sockets.get(socketId);
+        memberSocket.isReady = false;
+      });
+
+      wsServer.to(roomName).emit(START);
     });
 
     let selectTimer = 0;
@@ -80,10 +110,13 @@ function createWsServer(httpServer) {
       let count = 5;
       const countTerm = 1000;
 
-      wsServer.to(roomName).emit(NEW_SELECTOR, socket.id, count);
+      socket.isSelector = true;
+      wsServer.to(roomName).emit(NEW_SELECTOR, socket.id);
+      wsServer.to(roomName).emit(COUNTDOWN, count);
 
       selectTimer = setInterval(() => {
         if (count === 0) {
+          socket.isSelector = false;
           return clearInterval(selectTimer);
         }
 
@@ -93,8 +126,13 @@ function createWsServer(httpServer) {
       }, countTerm);
     });
 
-    socket.on(END_SELECT, (roomName) => {
-      wsServer.to(roomName).emit(END_SELECT);
+    socket.on(SELECT_SUCCESS, (roomName, point) => {
+      socket.isSelector = false;
+      socket.point = point;
+
+      clearInterval(selectTimer);
+      wsServer.to(roomName).emit(COUNTDOWN, 0);
+      wsServer.to(roomName).emit(SELECT_SUCCESS, point, socket.id);
     });
 
     socket.on(SET_CARDS, (roomName, openedCards, remainingCards) => {
@@ -103,6 +141,24 @@ function createWsServer(httpServer) {
 
     socket.on(SELECT_CARD, (roomName, cardIndex) => {
       wsServer.to(roomName).emit(SELECT_CARD, cardIndex);
+    });
+
+    socket.on(LET_JOIN, (playerId, openedCards, remainingCards) => {
+      wsServer.to(playerId).emit(START);
+      wsServer.to(playerId).emit(SET_CARDS, openedCards, remainingCards);
+    });
+
+    socket.on(GAME_OVER, (roomName) => {
+      const roomMemberIds = socket.adapter.rooms.get(roomName);
+      const result = [...roomMemberIds].map((socketId) => {
+        const memberSocket = wsServer.sockets.sockets.get(socketId);
+        const { nickname, point } = memberSocket;
+        memberSocket.point = 0;
+
+        return { nickname, point };
+      });
+
+      wsServer.to(roomName).emit(GAME_OVER, result);
     });
 
     socket.on(EXIT_ROOM, (roomName) => {
@@ -117,18 +173,20 @@ function createWsServer(httpServer) {
 
     function handlePlayerLeft(roomName, socket) {
       socket.leave(roomName);
-      socket.to(roomName).emit(PLAYER_LEFT, socket.id);
-
       const roomMemberIds = socket.adapter.rooms.get(roomName);
 
       if (socket.isLeader && roomMemberIds) {
+        socket.isLeader = false;
+
         const newLeaderId = [...roomMemberIds][0];
         const newLeader = wsServer.sockets.sockets.get(newLeaderId);
         newLeader.isReady = false;
         newLeader.isLeader = true;
 
-        socket.to(roomName).emit(NEW_LEADER, newLeaderId);
+        wsServer.to(roomName).emit(NEW_LEADER, newLeaderId);
       }
+
+      wsServer.to(roomName).emit(PLAYER_LEFT, socket.id);
     }
   });
 }
