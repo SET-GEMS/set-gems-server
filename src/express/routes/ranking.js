@@ -3,8 +3,8 @@ const router = express.Router();
 const createError = require("http-errors");
 
 const Ranking = require("../models/Ranking");
-const { ERROR } = require("../constants/messages");
-const { OK, BAD_REQUEST } = require("../constants/statusCodes");
+const { ERROR } = require("../../constants/messages");
+const { OK, BAD_REQUEST } = require("../../constants/statusCodes");
 
 router.get("/", async function (req, res, next) {
   try {

@@ -1,6 +1,6 @@
 const createError = require("http-errors");
-const { ERROR } = require("./constants/messages");
-const { NOT_FOUND, INTERNAL_SERVER_ERROR } = require("./constants/statusCodes");
+const { ERROR } = require("../constants/messages");
+const { NOT_FOUND, INTERNAL_SERVER_ERROR } = require("../constants/statusCodes");
 
 exports.handleNotFound = function (req, res, next) {
   next(createError(NOT_FOUND));
