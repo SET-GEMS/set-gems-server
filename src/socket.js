@@ -114,14 +114,17 @@ function createWsServer(httpServer) {
       wsServer.to(roomName).emit(NEW_SELECTOR, socket.id);
       wsServer.to(roomName).emit(COUNTDOWN, count);
 
+      if (selectTimer) {
+        selectTimer = clearInterval(selectTimer);
+      }
+
       selectTimer = setInterval(() => {
         if (count === 0) {
           socket.isSelector = false;
-          return clearInterval(selectTimer);
+          return selectTimer = clearInterval(selectTimer);
         }
 
         count--;
-
         wsServer.to(roomName).emit(COUNTDOWN, count);
       }, countTerm);
     });
@@ -130,7 +133,7 @@ function createWsServer(httpServer) {
       socket.isSelector = false;
       socket.point = point;
 
-      clearInterval(selectTimer);
+      selectTimer = clearInterval(selectTimer);
       wsServer.to(roomName).emit(COUNTDOWN, 0);
       wsServer.to(roomName).emit(SELECT_SUCCESS, point, socket.id);
     });
@@ -187,6 +190,11 @@ function createWsServer(httpServer) {
       }
 
       wsServer.to(roomName).emit(PLAYER_LEFT, socket.id);
+
+      if (selectTimer) {
+        selectTimer = clearInterval(selectTimer);
+        wsServer.to(roomName).emit(COUNTDOWN, 0);
+      }
     }
   });
 }
