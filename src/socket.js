@@ -1,5 +1,13 @@
 const { Server } = require("socket.io");
-const { KNOCK, FULL_ROOM, JOIN_ROOM, NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START, SET_CARDS, SELECT_CARD, EXIT_ROOM, DISCONNECTING, NEW_LEADER, PLAYER_LEFT, NEW_SELECTOR, START_SELECT, COUNTDOWN, SELECT_SUCCESS, ALL_READY, GAME_OVER, LET_JOIN } = require("./constants/socketEvents");
+
+const { validateNickname, getRandomNickname } = require("./helper/nickname");
+const {
+  KNOCK, FULL_ROOM, INVALID_NICKNAME, JOIN_ROOM,
+  NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START,
+  SET_CARDS, SELECT_CARD, EXIT_ROOM, DISCONNECTING, NEW_LEADER, PLAYER_LEFT,
+  NEW_SELECTOR, START_SELECT, COUNTDOWN, SELECT_SUCCESS,
+  ALL_READY, GAME_OVER, LET_JOIN,
+} = require("./constants/socketEvents");
 
 function createWsServer(httpServer) {
   const wsServer = new Server(httpServer, {
@@ -11,19 +19,29 @@ function createWsServer(httpServer) {
   wsServer.on("connection", (socket) => {
     socket.on(KNOCK, (roomName, nickname, done) => {
       const maxRoomMemberCounts = 4;
-      const roomMemberIds = socket.adapter.rooms.get(roomName) || new Set();
+      const roomMemberIds = socket.adapter.rooms.get(roomName);
+      const roomMembers = roomMemberIds ? [...roomMemberIds].map((socketId) => {
+        return wsServer.sockets.sockets.get(socketId).nickname;
+      }): [];
 
-      if (roomMemberIds.size === maxRoomMemberCounts) {
+      if (roomMembers.length === maxRoomMemberCounts) {
         return socket.emit(FULL_ROOM);
       }
 
-      socket.join(roomName);
-
       if (nickname) {
-        socket.nickname = nickname;
+        const validation = validateNickname(nickname, roomMembers);
+
+        if (validation.result) {
+          socket.nickname = nickname;
+        } else {
+          return socket.emit(INVALID_NICKNAME, validation.message);
+        }
+
       } else {
-        socket.nickname = `anonymous${roomMemberIds.size}`;
+        socket.nickname = getRandomNickname(roomMembers);
       }
+
+      socket.join(roomName);
 
       socket.isReady = false;
       socket.point = 0;

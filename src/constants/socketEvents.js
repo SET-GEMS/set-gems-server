@@ -3,6 +3,7 @@ const SOCKET_EVENTS = {
   CONNECT_FAILED: "connect_failed",
   DISCONNECTING: "disconnecting",
   FULL_ROOM: "full_room",
+  INVALID_NICKNAME: "invalid_nickname",
   JOIN_ROOM: "join_room",
   KNOCK: "knock",
   EXIT_ROOM: "exit_room",
