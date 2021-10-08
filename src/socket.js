@@ -1,6 +1,6 @@
 const { Server } = require("socket.io");
 
-const { validateNickname, getRandomNickname } = require("./helper/nickname");
+const { validateNickname, createRandomNickname } = require("./helper/nickname");
 const {
   KNOCK, FULL_ROOM, INVALID_NICKNAME, JOIN_ROOM,
   NEW_PLAYER, JOINED, SIGNAL, CHAT, READY, START,
@@ -20,16 +20,17 @@ function createWsServer(httpServer) {
     socket.on(KNOCK, (roomName, nickname, done) => {
       const maxRoomMemberCounts = 4;
       const roomMemberIds = socket.adapter.rooms.get(roomName);
-      const roomMembers = roomMemberIds ? [...roomMemberIds].map((socketId) => {
-        return wsServer.sockets.sockets.get(socketId).nickname;
-      }): [];
+      const roomMemberNicknames = roomMemberIds ? [...roomMemberIds]
+        .map((socketId) => {
+          return wsServer.sockets.sockets.get(socketId).nickname;
+        }) : [];
 
-      if (roomMembers.length === maxRoomMemberCounts) {
+      if (roomMemberNicknames.length === maxRoomMemberCounts) {
         return socket.emit(FULL_ROOM);
       }
 
       if (nickname) {
-        const validation = validateNickname(nickname, roomMembers);
+        const validation = validateNickname(nickname, roomMemberNicknames);
 
         if (validation.result) {
           socket.nickname = nickname;
@@ -38,7 +39,7 @@ function createWsServer(httpServer) {
         }
 
       } else {
-        socket.nickname = getRandomNickname(roomMembers);
+        socket.nickname = createRandomNickname(roomMemberNicknames);
       }
 
       socket.join(roomName);

@@ -1,6 +1,6 @@
 const { ERROR } = require("../constants/messages");
 
-function validateNickname(nickname, roomMembers) {
+function validateNickname(nickname, existingNicknames) {
   const maxLength = 10;
   const validation = {
     result: true,
@@ -24,8 +24,8 @@ function validateNickname(nickname, roomMembers) {
     return validation;
   }
 
-  const isDuplicated = roomMembers.some((roomMember) => (
-    roomMember === nickname
+  const isDuplicated = existingNicknames.some((memberNickname) => (
+    memberNickname === nickname
   ));
 
   if (isDuplicated) {
@@ -38,15 +38,14 @@ function validateNickname(nickname, roomMembers) {
   return validation;
 }
 
-function getRandomNickname(roomMembers) {
+function createRandomNickname(existingNicknames) {
   const baseString = "anonymous";
   let nickname = "anonymous0";
 
-  for (let i = 0; i < roomMembers.length + 1; i++) {
+  for (let i = 0; i < existingNicknames.length + 1; i++) {
     nickname = `${baseString}${i}`;
 
-    console.log(nickname);
-    if (!roomMembers.includes(nickname)) {
+    if (!existingNicknames.includes(nickname)) {
       break;
     }
   }
@@ -54,4 +53,4 @@ function getRandomNickname(roomMembers) {
   return nickname;
 }
 
-module.exports = { validateNickname, getRandomNickname };
+module.exports = { validateNickname, createRandomNickname };
