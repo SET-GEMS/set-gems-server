@@ -77,4 +77,4 @@ https://user-images.githubusercontent.com/72963478/136772296-55e99e1b-ed79-44e0-
 ### Service Worker 적용 후, 서버와의 연결이 끊김
 - 태스크 카드: [#29 프로그레시브 웹 앱 적용]
 - 원인: service worker의 fetch 이벤트리스너가 cors 요청을 처리하지 못함.
-- 수정: cors 요청은 service worker의 fethc 이벤트 리스너가 처리하지 않게 조건문으로 cors요청을 걸러냄.
+- 수정: cors 요청은 service worker의 fetch 이벤트 리스너가 처리하지 않게 조건문으로 cors요청을 걸러냄.
