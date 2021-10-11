@@ -153,7 +153,6 @@ function createWsServer(httpServer) {
       socket.point = point;
 
       selectTimer = clearInterval(selectTimer);
-      wsServer.to(roomName).emit(COUNTDOWN, 0);
       wsServer.to(roomName).emit(SELECT_SUCCESS, point, socket.id);
     });
 
