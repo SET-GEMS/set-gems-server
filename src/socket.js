@@ -215,6 +215,8 @@ function createWsServer(httpServer) {
       }
     }
   });
+
+  return wsServer;
 }
 
 module.exports = createWsServer;
