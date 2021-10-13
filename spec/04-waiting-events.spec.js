@@ -113,20 +113,22 @@ describe("chat", () => {
 
 describe("ready", () => {
   it("should send member's isReady and isAllReady when member emit ready true", async () => {
-    let receivedIsReady = null;
-    let receivedPlayerId = null;
+    const receivedIsReady = new Set();
+    const receivedPlayerId = new Set();
     let receivedIsAllReady = null;
 
     const leaderGetReady = new Promise((resolve) => {
       leaderSocket.on("ready", (isReady, playerId) => {
-        receivedIsReady = isReady;
-        receivedPlayerId = playerId;
+        receivedIsReady.add(isReady);
+        receivedPlayerId.add(playerId);
         resolve();
       });
     });
 
     const memberGetReady = new Promise((resolve) => {
-      memberSocket.on("ready", () => {
+      memberSocket.on("ready", (isReady, playerId) => {
+        receivedIsReady.add(isReady);
+        receivedPlayerId.add(playerId);
         resolve();
       });
     });
@@ -142,26 +144,30 @@ describe("ready", () => {
 
     await Promise.all([leaderGetReady, memberGetReady, leaderGetAllReady]);
 
-    expect(receivedIsReady).toBe(true);
-    expect(receivedPlayerId).toBe(memberServerSocket.id);
+    expect(receivedIsReady.size).toBe(1);
+    expect(receivedPlayerId.size).toBe(1);
+    expect(receivedIsReady.has(true)).toBe(true);
+    expect(receivedPlayerId.has(memberServerSocket.id)).toBe(true);
     expect(receivedIsAllReady).toBe(true);
   });
 
   it("should send member's isReady and isAllReady when member emit ready false", async () => {
-    let receivedIsReady = null;
-    let receivedPlayerId = null;
+    const receivedIsReady = new Set();
+    const receivedPlayerId = new Set();
     let receivedIsAllReady = null;
 
     const leaderGetReady = new Promise((resolve) => {
       leaderSocket.on("ready", (isReady, playerId) => {
-        receivedIsReady = isReady;
-        receivedPlayerId = playerId;
+        receivedIsReady.add(isReady);
+        receivedPlayerId.add(playerId);
         resolve();
       });
     });
 
     const memberGetReady = new Promise((resolve) => {
-      memberSocket.on("ready", () => {
+      memberSocket.on("ready", (isReady, playerId) => {
+        receivedIsReady.add(isReady);
+        receivedPlayerId.add(playerId);
         resolve();
       });
     });
@@ -177,8 +183,10 @@ describe("ready", () => {
 
     await Promise.all([leaderGetReady, memberGetReady, leaderGetAllReady]);
 
-    expect(receivedIsReady).toBe(false);
-    expect(receivedPlayerId).toBe(memberServerSocket.id);
+    expect(receivedIsReady.size).toBe(1);
+    expect(receivedPlayerId.size).toBe(1);
+    expect(receivedIsReady.has(false)).toBe(true);
+    expect(receivedPlayerId.has(memberServerSocket.id)).toBe(true);
     expect(receivedIsAllReady).toBe(false);
   });
 });

@@ -138,13 +138,13 @@ function createWsServer(httpServer) {
       }
 
       selectTimer = setInterval(() => {
+        count--;
+        wsServer.to(roomName).emit(COUNTDOWN, count);
+
         if (count === 0) {
           socket.isSelector = false;
           return selectTimer = clearInterval(selectTimer);
         }
-
-        count--;
-        wsServer.to(roomName).emit(COUNTDOWN, count);
       }, countTerm);
     });
 
