@@ -12,7 +12,7 @@ describe("POST /ranking", () => {
   afterEach(async () => {
     try {
       await Ranking.deleteMany();
-    } catch (err) {
+    } catch(err) {
       console.log(`error: ${err} cannot delete mock data`);
     }
   });
@@ -51,7 +51,7 @@ describe("POST /ranking", () => {
 
     try {
       await Promise.all(pendingRequests);
-    } catch (err) {
+    } catch(err) {
       console.log(`error: ${err} cannot create mock ranking`);
     }
 
@@ -85,7 +85,7 @@ describe("GET /ranking", () => {
 
     try {
       await Promise.all(pendingRequests);
-    } catch (err) {
+    } catch(err) {
       console.log(`error: ${err} cannot create mock ranking`);
     }
   });
@@ -93,7 +93,7 @@ describe("GET /ranking", () => {
   afterEach(async () => {
     try {
       await Ranking.deleteMany();
-    } catch (err) {
+    } catch(err) {
       console.log(`error: ${err} cannot delete mock data`);
     }
   });
